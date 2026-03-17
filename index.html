@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>DeepSeek Jailbreak Panel</title>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Animated background */
+        .circles {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            z-index: 0;
+        }
+
+        .circles li {
+            position: absolute;
+            display: block;
+            list-style: none;
+            width: 20px;
+            height: 20px;
+            background: rgba(255, 255, 255, 0.2);
+            animation: animate 25s linear infinite;
+            bottom: -150px;
+        }
+
+        .circles li:nth-child(1) { left: 25%; width: 80px; height: 80px; animation-delay: 0s; }
+        .circles li:nth-child(2) { left: 10%; width: 20px; height: 20px; animation-delay: 2s; animation-duration: 12s; }
+        .circles li:nth-child(3) { left: 70%; width: 20px; height: 20px; animation-delay: 4s; }
+        .circles li:nth-child(4) { left: 40%; width: 60px; height: 60px; animation-delay: 0s; animation-duration: 18s; }
+        .circles li:nth-child(5) { left: 65%; width: 20px; height: 20px; animation-delay: 0s; }
+        .circles li:nth-child(6) { left: 75%; width: 110px; height: 110px; animation-delay: 3s; }
+        .circles li:nth-child(7) { left: 35%; width: 150px; height: 150px; animation-delay: 7s; }
+        .circles li:nth-child(8) { left: 50%; width: 25px; height: 25px; animation-delay: 15s; animation-duration: 45s; }
+        .circles li:nth-child(9) { left: 20%; width: 15px; height: 15px; animation-delay: 2s; animation-duration: 35s; }
+        .circles li:nth-child(10) { left: 85%; width: 150px; height: 150px; animation-delay: 0s; animation-duration: 11s; }
+
+        @keyframes animate {
+            0% { transform: translateY(0) rotate(0deg); opacity: 1; border-radius: 0; }
+            100% { transform: translateY(-1000px) rotate(720deg); opacity: 0; border-radius: 50%; }
+        }
+
+        .login-container {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 50px;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            width: 400px;
+            position: relative;
+            z-index: 1;
+            backdrop-filter: blur(10px);
+            animation: slideUp 0.5s ease;
+        }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(50px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .logo {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .logo i {
+            font-size: 60px;
+            color: #667eea;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .logo h2 {
+            color: #333;
+            margin-top: 10px;
+            font-size: 24px;
+        }
+
+        .logo p {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .input-group {
+            position: relative;
+            margin: 30px 0;
+        }
+
+        .input-group i {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #667eea;
+            font-size: 18px;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 15px 15px 15px 45px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: all 0.3s;
+            background: white;
+        }
+
+        .input-group input:focus {
+            border-color: #667eea;
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .input-group input::placeholder {
+            color: #999;
+        }
+
+        .login-btn {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .login-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .login-btn:active {
+            transform: translateY(0);
+        }
+
+        .login-btn.loading {
+            pointer-events: none;
+            opacity: 0.7;
+        }
+
+        .login-btn.loading::after {
+            content: '';
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            top: 50%;
+            left: 50%;
+            margin-left: -10px;
+            margin-top: -10px;
+            border: 2px solid white;
+            border-top-color: transparent;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .error {
+            color: #e74c3c;
+            text-align: center;
+            margin-top: 15px;
+            font-size: 14px;
+            animation: shake 0.3s ease;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 20px;
+            color: #999;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <ul class="circles">
+        <li></li><li></li><li></li><li></li><li></li><li></li><li></li><li></li><li></li><li></li>
+    </ul>
+
+    <div class="login-container">
+        <div class="logo">
+            <i class="fas fa-robot"></i>
+            <h2>DeepSeek Jailbreak</h2>
+            <p>Enter your credentials to access the panel</p>
+        </div>
+
+        <div class="input-group">
+            <i class="fas fa-user"></i>
+            <input type="text" id="username" placeholder="Username" autocomplete="off">
+        </div>
+
+        <div class="input-group">
+            <i class="fas fa-lock"></i>
+            <input type="password" id="password" placeholder="Password">
+        </div>
+
+        <button class="login-btn" onclick="login()" id="loginBtn">
+            <span id="btnText">Login</span>
+        </button>
+
+        <div id="error" class="error"></div>
+        <div class="footer">© 2024 DeepSeek Jailbreak Panel</div>
+    </div>
+
+    <script>
+        // Firebase configuration - YOUR CONFIG
+        const firebaseConfig = {
+            apiKey: "AIzaSyAhOJblV5QFMmsrziXaRPOXlKIvZ7vpLrs",
+            authDomain: "quizprommax.firebaseapp.com",
+            databaseURL: "https://quizprommax-default-rtdb.firebaseio.com",
+            projectId: "quizprommax",
+            storageBucket: "quizprommax.firebasestorage.app",
+            messagingSenderId: "1014858101088",
+            appId: "1:1014858101088:web:6806b183c8b8caa6c6ae05",
+            measurementId: "G-5S9K7D6QQ4"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+
+        function login() {
+            const username = document.getElementById('username').value.trim();
+            const password = document.getElementById('password').value;
+            const loginBtn = document.getElementById('loginBtn');
+            const btnText = document.getElementById('btnText');
+            
+            if (!username || !password) {
+                document.getElementById('error').textContent = 'Please fill in all fields';
+                return;
+            }
+
+            // Show loading state
+            loginBtn.classList.add('loading');
+            btnText.style.opacity = '0';
+
+            database.ref('users').once('value', (snapshot) => {
+                const users = snapshot.val();
+                let found = false;
+                
+                for (let id in users) {
+                    if (users[id].username === username && users[id].password === password) {
+                        found = true;
+                        
+                        // Generate session token
+                        const sessionToken = Math.random().toString(36).substring(2) + Date.now().toString(36);
+                        
+                        // Save user data
+                        const userData = {
+                            username: username,
+                            role: users[id].role,
+                            id: id,
+                            sessionToken: sessionToken,
+                            loginTime: new Date().toISOString()
+                        };
+                        
+                        sessionStorage.setItem('currentUser', JSON.stringify(userData));
+                        
+                        // Track active user
+                        database.ref('active_users/' + id).set({
+                            username: username,
+                            role: users[id].role,
+                            login_time: new Date().toISOString(),
+                            last_active: new Date().toISOString(),
+                            status: 'active',
+                            sessionToken: sessionToken,
+                            ip: 'client-side'
+                        });
+                        
+                        // Add to activity log
+                        database.ref('activity_log').push({
+                            username: username,
+                            action: 'login',
+                            timestamp: new Date().toISOString()
+                        });
+                        
+                        // Redirect based on role
+                        setTimeout(() => {
+                            if (users[id].role === 'admin') {
+                                window.location.href = 'admin.html';
+                            } else {
+                                window.location.href = 'user.html';
+                            }
+                        }, 500);
+                        
+                        break;
+                    }
+                }
+                
+                if (!found) {
+                    loginBtn.classList.remove('loading');
+                    btnText.style.opacity = '1';
+                    document.getElementById('error').textContent = 'Invalid username or password';
+                    
+                    // Log failed attempt
+                    database.ref('failed_logins').push({
+                        username: username,
+                        timestamp: new Date().toISOString()
+                    });
+                }
+            }).catch(error => {
+                loginBtn.classList.remove('loading');
+                btnText.style.opacity = '1';
+                document.getElementById('error').textContent = 'Connection error. Please try again.';
+                console.error(error);
+            });
+        }
+
+        // Enter key to login
+        document.getElementById('password').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                login();
+            }
+        });
+    </script>
+</body>
+</html>
